@@ -36,7 +36,9 @@ VeraCrypt устанавливается без каких-либо пробле
 Запускаем VeraCrypt и выбираем шифроание системного диска:
 ![image](https://github.com/Green-Hamster/feHDD/assets/47595907/37bc41f6-08a7-4e78-a3d2-cfb32a8ae698)
 
+
 Выбираем мультизагрузку:
+
 ![image](https://github.com/Green-Hamster/feHDD/assets/47595907/99c850cc-142d-4d5d-a094-99c75f37d78b)
 
 Устанавливаем PIM. [Подробнее](https://veracrypt.eu/ru/Personal%20Iterations%20Multiplier%20%28PIM%29.html) о PIM можно почитать на сайте VeraCrypt. Коротко это второй фактор аутентификации, я рекомендую его его не игнарировать и выбирать значение между 485(значение по умолчанию) и 1000:
