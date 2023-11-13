@@ -28,3 +28,28 @@
 |/dev/sda5|Загрузчик GRUB|
 |/dev/sda6|Основной системный раздел Linux на котором расположена система|
 |/dev/sda7|Раздел файла подкачки Linux Swap|
+
+# Шифруем Windows
+> Шифрование с использование VeraCrypt требует добавления Microsoft 3-rd party certificate при настройке SecureBoot с собственными ключами. Если вы хотите использовать SecureBoot и не хотите разрешать загрузку сторонних приложений подписанных Microsoft используйте [Bitlocker](https://learn.microsoft.com/ru-ru/windows/security/operating-system-security/data-protection/bitlocker/) для шифрования Windows. 
+
+VeraCrypt устанавливается без каких-либо проблем по принципу "Далее-Далее-Готово" поэтому здесь я не буду описывать процесс установки. Перейдем сразу к шифрованию.
+Запускаем VeraCrypt и выбираем шифроание системного диска:
+![image](https://github.com/Green-Hamster/feHDD/assets/47595907/37bc41f6-08a7-4e78-a3d2-cfb32a8ae698)
+
+Выбираем мультизагрузку:
+![image](https://github.com/Green-Hamster/feHDD/assets/47595907/99c850cc-142d-4d5d-a094-99c75f37d78b)
+
+Устанавливаем PIM. [Подробнее](https://veracrypt.eu/ru/Personal%20Iterations%20Multiplier%20%28PIM%29.html) о PIM можно почитать на сайте VeraCrypt. Коротко это второй фактор аутентификации, я рекомендую его его не игнарировать и выбирать значение между 485(значение по умолчанию) и 1000:
+![image](https://github.com/Green-Hamster/feHDD/assets/47595907/7a1f0b55-44a8-42ab-942b-bbe623cefa24)
+
+Установщик потребует сохранить диск востановления VeraCrypt и записать его на флешку отформатированную в Fat32. Обязательно сделайте это, и положите ее в надежное место:
+
+
+После создания диска восстановления VeraCrypt попросит перезагрузиться для выполнения предварительного тестирования. После успешного теста можно приступать к шифрованию:
+![image](https://github.com/Green-Hamster/feHDD/assets/47595907/f30867e2-8cfc-4827-ab34-cad62e0c4fa2)
+
+В процессе шифрования можно использовать систему как обычно:
+![image](https://github.com/Green-Hamster/feHDD/assets/47595907/74273d6e-a6c4-4433-b81d-fa06f1b4fe5f)
+
+
+
