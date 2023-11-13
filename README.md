@@ -157,9 +157,10 @@ e4defrag /mnt/
 ## Настройка системы на зашифрованном разделе
 ### Смена корневого каталога
 Создаем файлы-маркеры на шифрованной и нешифрованной ОС
-![[Pasted image 20231113231850.png]]
+![image](https://github.com/Green-Hamster/feHDD/assets/47595907/6a34b4fa-f6cf-48de-ad05-97b2efd6f5b3)
 
-![[Pasted image 20231113232034.png]]
+![image](https://github.com/Green-Hamster/feHDD/assets/47595907/ab06f0a8-2523-43d3-8516-3d68e5c1123b)
+
 
 связываем служебные файлы и меняем корневой кталог с помощью `chroot`:
 ```bash
@@ -174,7 +175,8 @@ chroot /mnt
 ### Настройка /etc/crypttab
 Запускаем `blkid`
 Находим строку, которую строку которая начинается с имени раздела на котором был создан криптоконтейнер:
-![[Pasted image 20231113235619.png]]
+![image](https://github.com/Green-Hamster/feHDD/assets/47595907/4d5e8122-289c-4ded-81dc-af4d15bdbf0f)
+
 Копируем значение UUID
 Добавляем запись в crypttab
 ```bash
