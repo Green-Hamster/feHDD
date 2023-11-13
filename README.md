@@ -119,5 +119,96 @@ lvcreate -n root -L 70G kali
 #Создать на логическом томе root файловую систему ext4
 mkfs.ext4 /dev/kali/root
 ```
-kkkk
 
+## Перенос системы на зашифрованный раздел
+Монтируем созданный виртуальный том в систему  
+
+```bash
+mount /dev/mapper/kali-root /mnt
+```
+
+
+Создаем папку /mnt2 _(Примечание — мы все еще работаем с live usb, в точку /mnt смонтирован sda8\_crypt)_, монтируем наш текущий GNU/Linux в созданную папку:  
+```bash
+mkdir /mnt2
+mount /dev/sda6 /mnt2
+```
+
+С помощью программы rsync синхронизируем кталооги:
+`rsync -avlxhHX --progress /mnt2/ /mnt`
+
+Опции:
+* -а -режим архива  
+* -v -вербализация.
+* -l — копировать символьные ссылки
+* -x — работать только в этой файловой системе
+* -H -копировать хардлинки, как есть; 
+* -g -сохранить группы;  
+* -P --progress — статус времени работы над файлом;  
+
+Далее, **необходимо** провести дефрагментацию раздела логического диска  
+
+```shell
+#после проверки, e4defrag выдаст, что степень дефрагментации раздела ≈ 0, это заблуждение, которое может вам стоить существенной потери производительности!
+e4defrag -c /mnt
+#проводим дефрагментацию шифрованной GNU/Linux/ 
+e4defrag /mnt/
+```
+## Настройка системы на зашифрованном разделе
+### Смена корневого каталога
+Создаем файлы-маркеры на шифрованной и нешифрованной ОС
+![[Pasted image 20231113231850.png]]
+
+![[Pasted image 20231113232034.png]]
+
+связываем служебные файлы и меняем корневой кталог с помощью `chroot`:
+```bash
+mount /dev/ubuntu/root /mnt
+mount --bind /dev /mnt/dev
+mount --bind /sys /mnt/sys
+mount --bind /proc /mnt/proc
+mount --bind /etc/resolv.conf /mnt/etc/resolv.conf
+chroot /mnt
+```
+
+### Настройка /etc/crypttab
+Запускаем `blkid`
+Находим строку, которую строку которая начинается с имени раздела на котором был создан криптоконтейнер:
+![[Pasted image 20231113235619.png]]
+Копируем значение UUID
+Добавляем запись в crypttab
+```bash
+nano /etc/fstab
+```
+
+```toml
+# Configuration for encrypted block devices.
+# See crypttab(5) for details.
+
+# NOTE: Do not list your root (/) partition here, it must be set up
+#       beforehand by the initramfs (/etc/mkinitcpio.conf).
+
+# <name>       <device>                                     <password>              <options>
+# home         UUID=b8ad5c18-f445-495d-9095-c9ec4f9d2f37    /etc/mypassword1
+# data1        /dev/sda3                                    /etc/mypassword2
+# data2        /dev/sda5                                    /etc/cryptfs.key
+# swap         /dev/sdx4                                    /dev/urandom            swap,cipher=aes-cbc-essiv:sha256,size=256
+# vol          /dev/sdb7                                    none
+sda5_crypt UUID=470e92ff-6faf-4f19-8927-15426210f5e1 none luks
+```
+
+### Настройка /etc/fstab
+В fstab прописываем созданные виртуаальные тома
+
+```bash
+nano /etc/fstab
+```
+
+```bash
+# «file system» «mount poin» «type» «options» «dump» «pass»  
+# / was on /dev/mapper/kali-root during installation  
+/dev/mapper/kali-root / ext4 errors=remount-ro 0 1
+
+#swap
+/dev/mapper/kali-swap none swap sw 0 0
+```
