@@ -43,22 +43,25 @@
 
 VeraCrypt устанавливается без каких-либо проблем по принципу "Далее-Далее-Готово" поэтому здесь я не буду описывать процесс установки. Перейдем сразу к шифрованию.
 Запускаем VeraCrypt и выбираем шифроание системного диска:
-![[Pasted image 20231113005049.png]]
+![3c5a5a2b522bdbd5e1ef7f37229de9e9](https://github.com/Green-Hamster/feHDD/assets/47595907/084d0f62-185e-4ada-ae72-de8ab48a0ddb)
 
 Выбираем мультизагрузку:
-![[Pasted image 20231113005243.png]]
+![340a09d7c5c263c3dbb64168658c9c19](https://github.com/Green-Hamster/feHDD/assets/47595907/6d00ecd1-db9e-45f0-969d-a8498187f908)
+
 
 Устанавливаем PIM. [Подробнее](https://veracrypt.eu/ru/Personal%20Iterations%20Multiplier%20%28PIM%29.html) о PIM можно почитать на сайте VeraCrypt. Коротко это второй фактор аутентификации, я рекомендую его его не игнарировать и выбирать значение между 485(значение по умолчанию) и 1000:
-![[Pasted image 20231113005810.png]]
+![0c8615f1bcb3f1c20edac0918a394af3](https://github.com/Green-Hamster/feHDD/assets/47595907/fe5f0655-0e45-4773-90fb-6f28204f8cbd)
 
-Установщик потребует сохранить диск востановления VeraCrypt и записать его на флешку отформатированную в Fat32. Обязательно сделайте это, и положите ее в надежное место:
 
+Установщик потребует сохранить диск востановления VeraCrypt и записать его на флешку отформатированную в Fat32. Обязательно сделайте это, и положите ее в надежное место.
 
 После создания диска восстановления VeraCrypt попросит перезагрузиться для выполнения предварительного тестирования. После успешного теста можно приступать к шифрованию:
-![[Pasted image 20231113011224.png]]
+![475302f34f14e3c2abd72d9ceb83f0ac](https://github.com/Green-Hamster/feHDD/assets/47595907/8107d2f2-d799-4fd6-869a-4709e6403bfd)
+
 
 В процессе шифрования можно использовать систему как обычно:
-![[Pasted image 20231113011351.png]]
+![196c07b3db49749a17aed35440e83377](https://github.com/Green-Hamster/feHDD/assets/47595907/723cecc3-bfd2-4cef-b9c1-f3df11e635ec)
+
 
 # Шифруем Linux
 
@@ -164,9 +167,10 @@ e4defrag /mnt/
 ## Настройка системы на зашифрованном разделе
 ### Смена корневого каталога
 Создаем файлы-маркеры на шифрованной и нешифрованной ОС
-![[Pasted image 20231113231850.png]]
+![c15c2c67f1889e317419f7af14e2ce10](https://github.com/Green-Hamster/feHDD/assets/47595907/16f068a1-6a82-42d8-9001-333e46e007a6)
 
-![[Pasted image 20231113232034.png]]
+![22fde6d5ede97807c35a1a169ed79945](https://github.com/Green-Hamster/feHDD/assets/47595907/a1c4a52c-6754-4de0-a245-fa401cca6b50)
+
 
 связываем служебные файлы и меняем корневой кталог с помощью `chroot`:
 ```bash
@@ -181,7 +185,8 @@ chroot /mnt
 ### Настройка /etc/crypttab
 Запускаем `blkid`
 Находим строку, которую строку которая начинается с имени раздела на котором был создан криптоконтейнер:
-![[Pasted image 20231113235619.png]]
+![8622e6c4437a52bf70dccc8c32ff8242](https://github.com/Green-Hamster/feHDD/assets/47595907/e6b55974-4ea9-41f0-a846-5c0fcdebcfa8)
+
 Копируем значение UUID
 Добавляем запись в crypttab
 ```bash
@@ -275,8 +280,8 @@ cp /boot/initrd.img-6.1.0-kali5-amd64{,.backup1}
 ```bash
 make-initrd
 ```
+![c2151d23cbfef3fff423bb88bf9d93fd](https://github.com/Green-Hamster/feHDD/assets/47595907/3ae74d47-74f5-4869-9e18-4e165303b9d7)
 
-![[Pasted image 20230322201529.png]]
 
 ### Создание UKI
 
@@ -382,8 +387,8 @@ mkinitcpio -P
 ```
 
 ## Итоговая структура разделов
+![572a2c2159be0090b758564fc75cfeac](https://github.com/Green-Hamster/feHDD/assets/47595907/8bd73bf2-1577-4467-b67a-b5626076e8cd)
 
-![[Pasted image 20230325100336.png]]
 # Установка и настройка rEFInd
 *Все команды требуют привелегий root пользователя*
 Устанавливаем пакет:
@@ -391,7 +396,8 @@ mkinitcpio -P
 pacman -S refind
 ```
 
-![[refind_install.png]]
+![e281c6230091aac388ba78ebcec0649c](https://github.com/Green-Hamster/feHDD/assets/47595907/c60f86ff-f449-488c-8ef7-91e46211a65c)
+
 
 Монтируем загрузочный раздел:
 ```bash
@@ -418,8 +424,6 @@ cp /usr/share/refind/refind.conf-sample /boot/efi/EFI/refind/refind.conf
 sudo pacman -S efibootmgr
 ```
 
-![[efibootmgr_without_args.png.png]]
-
 Настраиваем точку загрузки:
 ```bash
 efibootmgr --create --disk /dev/sda --part 2 --loader /EFI/refind/refind.efi --label "rEFInd Boot Manager" --unicode
@@ -433,11 +437,13 @@ efibootmgr --create --disk /dev/sda --part 2 --loader /EFI/refind/refind.efi --l
 - `--label` - Отображаемое имя
 - `--unicode` - Кодировка параметров конмандной строки загрузки ядра
 
-![[created_boot_entry.png]]
+![3f132bf07dbab9c8fe2dffe63382b742](https://github.com/Green-Hamster/feHDD/assets/47595907/6153a94c-c1f5-4f42-972b-d7f8240affa5)
+
 
 ## Настраиваем конфигурацию
 ### Экран загрузки после установки
-![[refind_default_view.png]]
+![5f7e6829bc93e5537879527bfe0df9ca](https://github.com/Green-Hamster/feHDD/assets/47595907/4ec174d4-0687-4da4-9b30-961c82e06721)
+
 #### Измененный конфиг
 ```bash
 # Ожидание в секундах перед авто-выбором ОС
@@ -469,12 +475,11 @@ menuentry kali {
 ## Финальный вид
 
 Содержимое папки:
-
-![[final_refind_folder.png]]
+![4e4638dfdb962323d12a2b976eaccd44](https://github.com/Green-Hamster/feHDD/assets/47595907/6f965c06-1ba5-42c4-8e33-2241f3de9114)
 
 Экран загрузки:
+![6b59331286f3609e81f4ac943885c385](https://github.com/Green-Hamster/feHDD/assets/47595907/1f307ac4-6a92-40b6-9aa1-4fb0147db1f2)
 
-![[final_refind.png]]
 
 
 # Настройка UEFI Secure Boot with own machine key
@@ -494,14 +499,15 @@ menuentry kali {
 ### Бекап старых ключей
 Текущие ключи можно просмотреть утилитой efi-readvar:
 
-![[current_efi_keys.png]]
+![3d8cc34dee324a1634ca7bae3e2b47ed](https://github.com/Green-Hamster/feHDD/assets/47595907/c29b0fb0-3358-4525-ae3b-907c98371c10)
 
 Сохраняем текущие ключи
 ```bash
 for var in PK KEK db dbx; do efi-readvar -v $var -o old_${var}.esl; done
 ```
 
-![[backup_keys_output.png]]
+![29cd702e4a4e2b520e9d9123032c01a4](https://github.com/Green-Hamster/feHDD/assets/47595907/bdc91b29-9628-437b-af66-6fb685f12568)
+
 ### Бекап загрузочного раздела
 
 ```bash
@@ -541,8 +547,8 @@ openssl req -newkey rsa:4096 -nodes -keyout db.key -new -x509 -sha256 -days 3650
 
 openssl x509 -outform DER -in db.crt -out db.cer
 ```
+![2c8a696dbe134bf2c3a230076bb5267b](https://github.com/Green-Hamster/feHDD/assets/47595907/c9816b45-e8c4-4b5c-a22f-3557190548d7)
 
-![[gen_keys_output.png]]
 
 ### Конвертируем ключи в понятный EFI формат ESL
 
@@ -617,9 +623,6 @@ sbsiglist --owner 77fa9abd-0359-4d32-bd60-28f4e78f784b --type x509 --output ms_w
 sign-efi-sig-list -a -g 77fa9abd-0359-4d32-bd60-28f4e78f784b -k KEK.key -c KEK.crt db ms_win_uef_db.esl add_ms_uef_db.auth
 ```
 
-![[Pasted image 20231013030629.png]]
-
-
 
 ## Добавление ключей в систему
 Если у вас установлен пароль суперюзера для BIOS(а если не установлен, бросьте всё и немедленно установите), то для загрузки ключей необходимо его ввести. Из ОС его можно ввести записав в специальный файл. Расположение файла зависит от производителя оборудования, я использую Lenovo Thinkpad и в моем случае это выглядит так:
@@ -668,10 +671,12 @@ sudo sbsign --key db.key --cert db.crt --output /boot/efi/EFI/Boot/bootx64.efi /
 ## Завершение настройки
 Перезагружаемся, проверяем что UEFI находится в User mode, а  Secure boot в Custom mode.
 Включаем Secure boot:
-![[Pasted image 20231114133435.png]]
+![7dccf88738e5d3fe234f15aa004bf3db](https://github.com/Green-Hamster/feHDD/assets/47595907/78ed3da7-940c-41a7-9682-302eca7a605b)
+
 
 Проверяем невозможность загрузки неподписанных приложений:
-![[Pasted image 20231114133518.png]]
+![c4da7fe7d77a2210912c9beeaf706ac5](https://github.com/Green-Hamster/feHDD/assets/47595907/8eac9c00-2661-4fdb-89d5-a261d26d72df)
+
 
 Мы получили полностью зашифрованную систему с доверенной загрузкой и проверкой загрузчиков на основе собственных ключей электронной подписи. Но есть один нюанся)) О нём мы поговорим далее.
 
