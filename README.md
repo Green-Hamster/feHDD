@@ -473,3 +473,192 @@ menuentry kali {
 
 ![final_refind](https://github.com/Green-Hamster/feHDD/assets/47595907/ed8bc2a8-2759-4ee1-b718-31bd386b2bb2)
 
+# Настройка UEFI Secure Boot with own machine key
+## Подготовка
+### Настройка uefi
+
+- Переводим Secure Boot в режим настроек
+- Очищаем текущие ключи
+- Монтируем загрузочный раздел: mount /dev/sda2 /boot/efi
+- Делаем бекап загрузочного раздела: 
+	`sudo cp -r /boot/efi /boot/efi_backup`
+- Устанавливаем необходимые утилиты: 
+	`sudo pacman -S efitools sbsigntool`
+
+![UEFI_clear_keys](https://github.com/Green-Hamster/feHDD/assets/47595907/f304e829-27b2-469f-85ab-87ade928b90c)
+
+![uefi_setup_mode](https://github.com/Green-Hamster/feHDD/assets/47595907/c21e5e63-f5d4-4871-851e-e5aed8eab434)
+
+### Бекап старых ключей
+Текущие ключи можно просмотреть утилитой efi-readvar:
+
+![current_efi_keys](https://github.com/Green-Hamster/feHDD/assets/47595907/57984384-4209-4f9e-931f-50c3a41d3281)
+
+
+Сохраняем текущие ключи
+```bash
+for var in PK KEK db dbx; do efi-readvar -v $var -o old_${var}.esl; done
+```
+
+![backup_keys_output](https://github.com/Green-Hamster/feHDD/assets/47595907/d027e303-746f-4fc1-ac3f-560a3b604890)
+
+### Бекап загрузочного раздела
+
+```bash
+sudo cp -r /boot/efi /boot/efi_backup_121023
+```
+
+### Устанавливаем необходимые утилиты
+```bash
+sudo pacman -S efitools sbsigntool
+```
+
+## Создание ключей
+### Создаем ключи
+
+Создаем папку для наших ключей:
+```bash
+cd ~
+mkdir uefi-keys
+cd uefi-keys
+```
+
+Создаем Platform key:
+```bash
+openssl req -newkey rsa:4096 -nodes -keyout PK.key -new -x509 -sha256 -days 3650 -subj "/CN=My Platform Key/" -out PK.crt
+
+openssl x509 -outform DER -in PK.crt -out PK.cer
+```
+
+Создаем Key Echange Key:
+```bash
+openssl req -newkey rsa:4096 -nodes -keyout KEK.key -new -x509 -sha256 -days 3650 -subj "/CN=My Key Exchange Key/" -out KEK.crt
+```
+
+Создаем database signing key:
+```bash
+openssl req -newkey rsa:4096 -nodes -keyout db.key -new -x509 -sha256 -days 3650 -subj "/CN=My Signature Database key/" -out db.crt
+
+openssl x509 -outform DER -in db.crt -out db.cer
+```
+
+![gen_keys_output](https://github.com/Green-Hamster/feHDD/assets/47595907/e869e6c5-821f-4613-9084-9da15dd297d9)
+
+
+### Конвертируем ключи в понятный EFI формат ESL
+
+Создаем уникальный id:
+```bash
+uuidgen -r > guid.txt
+```
+
+Конвертируем ключи, используя созданный UID:
+```bash
+cert-to-efi-sig-list -g "$(< guid.txt)" PK.crt PK.esl
+cert-to-efi-sig-list -g "$(< guid.txt)" KEK.crt KEK.esl
+cert-to-efi-sig-list -g "$(< guid.txt)" db.crt db.esl
+```
+
+### Подписываем списки сертификатов
+
+Подписываем PK самим собой:
+```bash
+sign-efi-sig-list -g "$(< guid.txt)" -k PK.key -c PK.crt PK PK.esl PK.auth
+```
+
+Подписываем KEK ключом PK:
+```bash
+sign-efi-sig-list -g "$(< guid.txt)" -k PK.key -c PK.crt KEK KEK.esl KEK.auth
+```
+
+Подписываем db ключом KEK:
+```bash
+sign-efi-sig-list -g "$(< guid.txt)" -k KEK.key -c KEK.crt db db.esl db.auth
+```
+
+Подписываем dbx ключом KEK:
+```bash
+sign-efi-sig-list -g "$(< guid.txt)" -k KEK.key -c KEK.crt dbx old_dbx.esl dbx.auth
+```
+
+#### Добавляем сертификат Microsoft для загрузки windows
+Скачиваем сертификат
+```bash
+wget --user-agent="Mozilla" https://www.microsoft.com/pkiops/certs/MicWinProPCA2011_2011-10-19.crt
+```
+
+Добавляем GUID Microsoft в файл
+```bash
+echo "77fa9abd-0359-4d32-bd60-28f4e78f784b" > msguid.txt
+```
+
+Конвертируем в формат .esl
+```bash
+sbsiglist --owner 77fa9abd-0359-4d32-bd60-28f4e78f784b --type x509 --output ms_win_db.esl MicWinProPCA2011_2011-10-19.crt
+```
+
+Подписываем esl:
+```bash
+sign-efi-sig-list -a -g 77fa9abd-0359-4d32-bd60-28f4e78f784b -k KEK.key -c KEK.crt db ms_win_db.esl add_ms_db.auth
+```
+
+#### Добавляем 3-rd party 3-rd party 3-rd party сертификат Microsoft для загрузки VeraCrypt
+Скачиваем сертификат
+```bash
+wget --user-agent="Mozilla" https://www.microsoft.com/pkiops/certs/MicCorUEFCA2011_2011-06-27.crt
+```
+
+Конвертируем в формат .esl
+```bash
+sbsiglist --owner 77fa9abd-0359-4d32-bd60-28f4e78f784b --type x509 --output ms_win_uef_db.esl MicCorUEFCA2011_2011-06-27.crt
+```
+
+```bash
+sign-efi-sig-list -a -g 77fa9abd-0359-4d32-bd60-28f4e78f784b -k KEK.key -c KEK.crt db ms_win_uef_db.esl add_ms_uef_db.auth
+```
+
+![Pasted image 20231013030629](https://github.com/Green-Hamster/feHDD/assets/47595907/8b636937-4b50-4a8a-8e37-e0661ddef9a6)
+
+## Добавление ключей в систему
+Если у вас установлен пароль суперюзера для BIOS(а если не установлен, бросьте всё и немедленно установите), то для загрузки ключей необходимо его ввести. Из ОС его можно ввести записав в специальный файл. Расположение файла зависит от производителя оборудования, я использую Lenovo Thinkpad и в моем случае это выглядит так:
+```bash
+cat > /sys/class/firmware-attributes/thinklmi/authentication/Admin/current_password 
+my-super-secret-password
+^D
+```
+
+Создаем структуру папок для ключей и копируем ключи:
+```bash
+mkdir -p /etc/secureboot/keys/{db,dbx,KEK,PK}
+cp db.auth /etc/secureboot/keys/db
+cp add_ms_db.auth /etc/secureboot/keys/db
+cp add_ms_uef_db.auth /etc/secureboot/keys/db
+cp PK.auth /etc/secureboot/keys/PK
+cp KEK.auth /etc/secureboot/keys/KEK
+cp dbx.auth /etc/secureboot/keys/dbx
+```
+
+С помощью утилиты sbkeysync из ранее устанрвленного пакета sbsigntool добавляем ключи в систему:
+```bash
+sbkeysync --verbose
+```
+
+sbkeysync не добавляет Platform key, возможно это связано с тем что именно добавление Platform key переводит UEFI из режима настройки "Setup mode" в режим использования "User mode".
+
+Для добавления Platform key воспользумся утилитой efi-updatevar из набора efitools:
+```bash
+efi-updatevar -f /etc/secureboot/keys/PK/PK.auth PK
+```
+
+## Подписание загрузчиков
+Монитруем ESP раздел:
+```bash
+sudo mount /dev/sda2 /boot/efi
+```
+
+Подписываем загрузчики:
+```bash
+sudo sbsign --key db.key --cert db.crt --output /boot/efi/EFI/arch/arch.efi /boot/efi/EFI/arch/arch.efi
+sudo sbsign --key db.key --cert db.crt --output /boot/efi/EFI/refind/refind.efi /boot/efi/EFI/refind/refind.efi
+sudo sbsign --key db.key --cert db.crt --output /boot/efi/EFI/Boot/bootx64.efi /boot/efi/EFI/Boot/bootx64.efi
+```
