@@ -134,7 +134,7 @@ mkdir /mnt2
 mount /dev/sda6 /mnt2
 ```
 
-С помощью программы rsync синхронизируем кталооги:
+С помощью программы rsync синхронизируем каталоги:
 `rsync -avlxhHX --progress /mnt2/ /mnt`
 
 Опции:
