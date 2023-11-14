@@ -673,8 +673,13 @@ sudo sbsign --key db.key --cert db.crt --output /boot/efi/EFI/Boot/bootx64.efi /
 
 # Ссылки
 [Используем Secure Boot в Linux на всю катушку](https://habr.com/ru/articles/308032/)
+
 [О безопасности UEFI, часть пятая](https://habr.com/ru/articles/267953/)
+
 [Укрощаем UEFI SecureBoot](https://habr.com/ru/articles/273497/)
+
 [Полнодисковое шифрование Windows и Linux установленных систем. Зашифрованная мультизагрузка](https://habr.com/ru/articles/482696/)
+
 [Hardware-and-Firmware-Security-Guidance](https://github.com/nsacyber/Hardware-and-Firmware-Security-Guidance)
+
 [Документация VeraCrypt](https://www.veracrypt.fr/en/Documentation.html)
