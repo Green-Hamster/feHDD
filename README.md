@@ -214,3 +214,167 @@ nano /etc/fstab
 #swap
 /dev/mapper/kali-swap none swap sw 0 0
 ```
+## Загрузка системы
+Процесс подготовки загрузчика отличается для разных дистрибутивов, в остальном процесс идентичен. Настройки характерные для конкретного семейства дистрибутивов выведены в отдельные подразделы.
+В качестве загрузчика будем использовать [Unified Kernel Image](https://wiki.archlinux.org/title/Unified_kernel_image), который представляет собой .efi приложение в которое вмонтированы ядро системы и образ initramfs.
+В пакете `systemd` (ранее в `gummiboot`) находится _linuxx64.efi.stub_ — заготовка UEFI-приложения, в которую можно встроить ядро, initramfs и аргументы, передаваемые ядру.
+В /boot хранятся образы ядра и initramfs. 
+### Kali
+Для подготовки образа initramfs будем использовать make-initrd.
+
+Проверяем конигурацию cryptsetup:
+```
+nano /etc/initramfs-tools/conf.d/cryptsetup
+```  
+
+должно соответствовать:
+```bash
+#/etc/initramfs-tools/conf.d/cryptsetup  
+CRYPTSETUP=yes  
+export CRYPTSETUP
+```
+
+#### Установка make-initrd и создание initramfs
+Устанавливаем необходимые пакеты:
+```bash
+apt-get install systemd-boot binutils make automake pkg-config udev libkmod-dev libz-dev libbz2-dev liblzma-dev libzstd-dev libelf-dev libtirpc-dev libcrypt-dev help2man gcc opensc pcscd libpcsclite1 byacc bison
+```
+
+Клонируем репозиторий:
+```bash
+git clone https://github.com/osboot/make-initrd --recursive
+```
+
+Переходим в папку проекта:
+```bash
+cd make-initrd
+```
+
+Собираем проект:
+```bash
+./autogen.sh 
+./configure
+make
+```
+
+
+Делаем бекап образа initramfs:
+```bash
+cp /boot/initrd.img-6.1.0-kali5-amd64{,.backup1}
+```
+
+
+Создаем новый образ:
+```bash
+make-initrd
+```
+
+![Pasted image 20230322201529](https://github.com/Green-Hamster/feHDD/assets/47595907/345f85ae-9f69-4240-ab35-89b4012a847f)
+
+
+#### Создание UKI
+
+Запишем в /boot/cmdline аргументы, которые будут передаваться ядру:
+```bash
+echo -n "quite splash" > /tmp/cmdline
+```
+
+Ниже представлен пример скрипта для создания UKI. В скрипте вычисляются сдвиги для корректного встраивания данных в заготовку приложения и непосредственно создание загрузчика.
+
+>При использовании скрипта необходимо заменить названия файлов ядра и initramfs в соответствии с вашей текущей версией.
+
+```bash
+#!/bin/bash
+
+# Extract the section alignment value
+align=$(objdump -p /usr/lib/systemd/boot/efi/linuxx64.efi.stub | awk '/SectionAlignment/ { print $2 }')
+align=$((16#$align))
+
+# Helper function to calculate aligned offset
+calculate_aligned_offset() {
+    local current_offset=$1
+    echo $((current_offset + align - current_offset % align))
+}
+
+# Calculate offsets for various sections
+osrel_offs=$(objdump -h "/usr/lib/systemd/boot/efi/linuxx64.efi.stub" | \
+    awk 'NF==7 {size=strtonum("0x"$3); offset=strtonum("0x"$4)} END {print size + offset}')
+osrel_offs=$(calculate_aligned_offset $osrel_offs)
+
+cmdline_offs=$(calculate_aligned_offset $(($osrel_offs + $(stat -Lc%s "/usr/lib/os-release"))))
+initrd_offs=$(calculate_aligned_offset $(($cmdline_offs + $(stat -Lc%s "/boot/cmdline"))))
+linux_offs=$(calculate_aligned_offset $(($initrd_offs + $(stat -Lc%s "initrd.img-6.1.0-kali5-amd64"))))
+
+# Add and change sections in the EFI stub
+objcopy \
+    --add-section .osrel="/etc/os-release" --change-section-vma .osrel=$(printf 0x%x $osrel_offs) \
+    --add-section .cmdline="/tmp/cmdline" --change-section-vma .cmdline=$(printf 0x%x $cmdline_offs) \
+    --add-section .initrd="/boot/initrd.img-6.1.0-kali5-amd64" --change-section-vma .initrd=$(printf 0x%x $initrd_offs) \
+    --add-section .linux="/boot/vmlinuz-6.1.0-kali5-amd64" --change-section-vma .linux=$(printf 0x%x $linux_offs) \
+/usr/lib/systemd/boot/efi/linuxx64.efi.stub /boot/efi/EFI/crypt_kali/crypt_kali.efi
+
+```
+
+### Arch
+#### Настройка mkinitcpio и создание Unified Kernel Image 
+В случае с Arch linux для создания UKI мы будем использовать mkinitcpio и файл linux.preset
+
+
+Монтируем ESP раздел:
+```bash
+mount /dev/sda2 /boot/efi
+```
+
+Создаем папку для нашего загрузчика:
+```bash
+mkdir /boot/efi/EFI/arch
+```
+
+>*Важно!* Для Arch Linux в качестве параметра ядра обязательно должны быть переданы параметры шифрованного раздела. 
+
+Запишем в /boot/cmdline аргументы, которые будут передаваться ядру:
+```toml
+rw cryptdevice=UUID=470e92ff-6faf-4f19-8927-15426210f5e1:sda5_crypt root=/dev/arch/root resume=/dev/arch/swap
+```
+
+Конфигурационный файл mkinitcpio находится по пути  `/etc/mkinitcpio.conf`
+
+Пример рабочей конфигурации mkinitcpio:
+```toml
+MODULES=()
+BINARIES=()
+FILES=()
+HOOKS=(base udev autodetect modconf kms keyboard keymap consolefont block encrypt lvm2 filesystems fsck)
+```
+
+> *Важно!* Обратите внимание на последовательность объявления hook'ов. Она имеет значение, encrypt и lvm должны быть указаны между block и filesystems и именно в такой последовательности.
+
+Пример рабочего конфига linux.preset:
+```toml
+# mkinitcpio preset file for the 'linux' package
+
+ALL_config="/etc/mkinitcpio.conf"
+ALL_kver="/boot/vmlinuz-linux"
+#ALL_microcode=(/boot/*-ucode.img)
+
+PRESETS=('default' 'fallback')
+
+#default_config="/etc/mkinitcpio.conf"
+#default_image="/boot/initramfs-linux.img"
+default_uki="/boot/efi/EFI/arch/arch.efi"
+default_options="--cmdline /boot/cmdline --splash=/usr/share/systemd/bootctl/splash-arch.bmp"
+
+#fallback_config="/etc/mkinitcpio.conf"
+fallback_image="/boot/initramfs-linux-fallback.img"
+#fallback_uki="/efi/EFI/Linux/arch-linux-fallback.efi"
+fallback_options="-S autodetect"
+```
+
+Создаем загрузчик:
+```bash
+mkinitcpio -P
+```
+
+## Итоговая структура разделов
+
+![Pasted image 20230325100336](https://github.com/Green-Hamster/feHDD/assets/47595907/347cadf9-8113-4f66-bdbc-b803e9d80a9e)
