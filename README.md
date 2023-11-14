@@ -379,3 +379,97 @@ mkinitcpio -P
 ## Итоговая структура разделов
 
 ![Pasted image 20230325100336](https://github.com/Green-Hamster/feHDD/assets/47595907/347cadf9-8113-4f66-bdbc-b803e9d80a9e)
+
+# Наводим красоту
+## Установка и настройка rEFInd
+*Все команды требуют привелегий root пользователя*
+
+### Устанавливаем пакет
+```bash
+pacman -S refind
+```
+
+![refind_install](https://github.com/Green-Hamster/feHDD/assets/47595907/c74adf65-9492-4eb3-9864-6dfa6ee078f3)
+
+
+### Монтируем загрузочный раздел
+```bash
+mount /dev/sda2 /boot/efi
+```
+### Создаем папку на загрузочном разделе
+```bash
+mkdir -p /boot/efi/EFI/refind
+```
+### Копируем наш boot manager
+```
+cp /usr/share/refind/refind_x64.efi /boot/efi/EFI/refind/refind_x64.efi
+```
+### Копируем конфигурационный файл
+```bash
+cp /usr/share/refind/refind.conf-sample /boot/efi/EFI/refind/refind.conf
+```
+### Устанаввливаем efibootmgr
+```bash
+sudo pacman -S efibootmgr
+```
+
+### Настраиваем точку загрузки
+
+```bash
+efibootmgr --create --disk /dev/sda --part 2 --loader /EFI/refind/refind.efi --label "rEFInd Boot Manager" --unicode
+```
+
+Опции:
+- `--create` - Создать новую точку загрузки и добавить в список загрузок
+- `--disk` - Диск на котором расположен загрузчик
+- `--part` - Раздел диска на котором расположен загрузчик
+- `--loader` - Сам загрузчик
+- `--label` - Отображаемое имя
+- `--unicode` - Кодировка параметров конмандной строки загрузки ядра
+
+![created_boot_entry](https://github.com/Green-Hamster/feHDD/assets/47595907/ebe5b6a6-c28d-4942-b92d-fcd7117492c3)
+
+
+### Настраиваем конфигурацию
+#### Экран загрузки после установки
+![refind_default_view](https://github.com/Green-Hamster/feHDD/assets/47595907/dcbe0275-fab9-4315-ad20-1229c696d24d)
+
+#### Измененный конфиг
+```bash
+# Ожидание в секундах перед авто-выбором ОС
+timeout 20
+use_nvram false
+# фоновый рисунок
+banner /EFI/refind/m.png
+# отключить автоматическое обнаружение загрузчиков в директориях
+dont_scan_dirs /EFI/VeraCrypt
+dont_scan_dirs /EFI/Microsoft
+
+# Пункт для загрузки windows
+menuentry Windows {
+    icon \EFI\refind\icons\blue.png
+    loader \EFI\Boot\bootx64.efi
+}
+# Пункт для загрузки Arch
+menuentry Arch {
+    icon /EFI/refind/icons/os_arch.png
+    loader /EFI/arch/arch.efi
+}
+# Пунккт для загрузки Kali
+menuentry kali {
+    icon /EFI/refind/icons/red.png
+    loader /EFI/crypt_kali/crypt_kali.efi
+}
+```
+
+#### Финальный вид
+
+Содержимое папки:
+
+![final_refind_folder](https://github.com/Green-Hamster/feHDD/assets/47595907/e1aeb46a-1d5b-4735-825b-38d74a3f35fe)
+
+
+Экран загрузки:
+
+![final_refind](https://github.com/Green-Hamster/feHDD/assets/47595907/ed8bc2a8-2759-4ee1-b718-31bd386b2bb2)
+
