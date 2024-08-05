@@ -42,6 +42,7 @@ VeraCrypt устанавливается без каких-либо пробле
 ![3c5a5a2b522bdbd5e1ef7f37229de9e9](https://github.com/Green-Hamster/feHDD/assets/47595907/084d0f62-185e-4ada-ae72-de8ab48a0ddb)
 
 Выбираем мультизагрузку:
+
 ![340a09d7c5c263c3dbb64168658c9c19](https://github.com/Green-Hamster/feHDD/assets/47595907/6d00ecd1-db9e-45f0-969d-a8498187f908)
 
 
