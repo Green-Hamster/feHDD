@@ -207,7 +207,7 @@ sda5_crypt UUID=470e92ff-6faf-4f19-8927-15426210f5e1 none luks
 ```
 
 ### Настройка /etc/fstab
-В fstab прописываем созданные виртуаальные тома
+В fstab прописываем созданные виртуальные тома
 
 ```bash
 nano /etc/fstab
