@@ -169,7 +169,7 @@ e4defrag /mnt/
 ![22fde6d5ede97807c35a1a169ed79945](https://github.com/Green-Hamster/feHDD/assets/47595907/a1c4a52c-6754-4de0-a245-fa401cca6b50)
 
 
-связываем служебные файлы и меняем корневой кталог с помощью `chroot`:
+связываем служебные файлы и меняем корневой каталог с помощью `chroot`:
 ```bash
 mount /dev/ubuntu/root /mnt
 mount --bind /dev /mnt/dev
